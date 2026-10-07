@@ -3,10 +3,15 @@ extends Node2D
 
 signal canvas_input(event: InputEventMouse)
 
+const MAX_UNDO_STATES = 20
+
 @export var camera_movable: bool = false
 @export var camera: Camera2D
 
+var is_baking: bool = false
+
 var _project: Project
+var _undo_history: Array[Dictionary] = []
 
 @onready var control_node: Control = $Control
 @onready var layers_node: Node2D = $Control/Layers
@@ -26,6 +31,7 @@ func attach_project(project: Project) -> void:
 		_project.new_current_page.disconnect(render_page)
 
 	_project = project
+	_undo_history.clear()
 
 	if _project:
 		_project.new_current_page.connect(render_page)
@@ -65,6 +71,7 @@ func set_onion_skin_depth(new_depth: int) -> void:
 
 ## Bakes [code]dynamic_node[/code] contents to the current page.
 func bake_page() -> void:
+	is_baking = true
 	# Getting items from our project.
 	var current_page = _project.frames[_project.current_frame]
 	var current_layer = _project.current_layer
@@ -113,7 +120,58 @@ func bake_page() -> void:
 		node.queue_free()
 
 	_project.get_current_page()
+	is_baking = false
 
 
 func _on_gui_input(event: InputEvent) -> void:
 	canvas_input.emit(event)
+
+
+## Saves independent copies of the current page before an edit.
+func save_undo_state() -> void:
+	if not _project:
+		return
+
+	var page = _project.get_current_page()
+	var saved_layers: Array[Image] = []
+
+	for image in page.layers:
+		saved_layers.append(image.duplicate())
+
+	_undo_history.append({
+		"page": page,
+		"layers": saved_layers,
+		"names": page.names.duplicate(),
+		"current_layer": _project.current_layer,
+	})
+
+	if _undo_history.size() > MAX_UNDO_STATES:
+		_undo_history.pop_front()
+
+
+## Restores the latest saved page still belonging to this project.
+func undo() -> void:
+	if not _project or is_baking:
+		return
+
+	while not _undo_history.is_empty():
+		var state: Dictionary = _undo_history.pop_back()
+		var page: Page = state["page"]
+		var frame_index = _project.frames.find(page)
+
+		if frame_index == -1:
+			continue
+
+		page.layers.clear()
+		page.textures.clear()
+		page.names.assign(state["names"])
+
+		for image in state["layers"]:
+			page.layers.append(image.duplicate())
+
+		page.get_content()
+		_project.current_layer = state["current_layer"]
+		_project.current_frame = frame_index
+		page.page_update.emit()
+		_project.get_page_by_index(frame_index)
+		return
