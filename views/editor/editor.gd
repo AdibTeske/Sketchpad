@@ -16,6 +16,7 @@ var current_tool: Tool:
 		current_tool = value
 		tool_changed.emit(value)
 
+var _pointer_down: bool = false
 
 func _ready() -> void:
 	canvas.canvas_input.connect(_handle_canvas_input)
@@ -52,15 +53,36 @@ func unload_project() -> void:
 
 
 func _handle_canvas_input(event: InputEvent) -> void:
+	if not project or canvas.is_baking:
+		return
+
 	if event is InputEventMouse:
 		var canvas_pos = canvas.dynamic_node.get_local_mouse_position()
 		if event is InputEventMouseButton:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				if current_tool is Tool:
 					if event.pressed:
+						_pointer_down = true
+						canvas.save_undo_state()
 						current_tool.on_pointer_down(canvas_pos, canvas)
-					else:
+					elif _pointer_down:
 						current_tool.on_pointer_up(canvas_pos, canvas)
+						_pointer_down = false
 		elif event is InputEventMouseMotion:
 			if current_tool is Tool:
 				current_tool.on_pointer_move(canvas_pos, canvas)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if not event.pressed or event.echo:
+			return
+		if event.keycode != KEY_Z or event.shift_pressed or event.alt_pressed:
+			return
+		if not (event.ctrl_pressed or event.meta_pressed):
+			return
+		if not project or _pointer_down or canvas.is_baking:
+			return
+
+		canvas.undo()
+		get_viewport().set_input_as_handled()
