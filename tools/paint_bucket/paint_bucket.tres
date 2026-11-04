@@ -4,12 +4,15 @@
 [ext_resource type="Script" uid="uid://bkfy5dxh8w0kk" path="res://tools/paint_bucket/paint_bucket.gd" id="1_swbpr"]
 [ext_resource type="Texture2D" uid="uid://c02ml124hodgj" path="res://assets/icons/paint_bucket.png" id="2_362ot"]
 [ext_resource type="PackedScene" uid="uid://ii77ofn0qrer" path="res://tools/paint_bucket/paint_bucket_bar.tscn" id="2_ajtq2"]
+[ext_resource type="Texture2D" path="res://tools/paint_bucket/cursor.png" id="3_cursor"]
 
 [resource]
 script = ExtResource("1_swbpr")
 tolerance = 0.1
 name = "Paint Bucket"
 icon = ExtResource("2_362ot")
+cursor = ExtResource("3_cursor")
+cursor_hotspot = Vector2(8, 22)
 handler = ExtResource("1_4fikb")
 handler_bar = ExtResource("2_ajtq2")
 metadata/_custom_type_script = "uid://bkfy5dxh8w0kk"
