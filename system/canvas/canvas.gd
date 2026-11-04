@@ -12,6 +12,9 @@ var is_baking: bool = false
 
 var _project: Project
 var _undo_history: Array[Dictionary] = []
+var _cursor: Texture2D
+var _cursor_hotspot: Vector2 = Vector2.ZERO
+var _mouse_inside_control: bool = false
 
 @onready var control_node: Control = $Control
 @onready var layers_node: Node2D = $Control/Layers
@@ -24,6 +27,29 @@ var _undo_history: Array[Dictionary] = []
 
 func _ready() -> void:
 	camera.movable = camera_movable
+	control_node.mouse_entered.connect(_on_control_mouse_entered)
+	control_node.mouse_exited.connect(_on_control_mouse_exited)
+
+
+func set_tool_cursor(tool: Tool) -> void:
+	_cursor = tool.cursor if tool else null
+	_cursor_hotspot = tool.cursor_hotspot if tool else Vector2.ZERO
+	if _mouse_inside_control:
+		_apply_cursor()
+
+
+func _on_control_mouse_entered() -> void:
+	_mouse_inside_control = true
+	_apply_cursor()
+
+
+func _on_control_mouse_exited() -> void:
+	_mouse_inside_control = false
+	Input.set_custom_mouse_cursor(null)
+
+
+func _apply_cursor() -> void:
+	Input.set_custom_mouse_cursor(_cursor, Input.CURSOR_ARROW, _cursor_hotspot)
 
 
 func attach_project(project: Project) -> void:

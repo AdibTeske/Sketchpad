@@ -14,6 +14,7 @@ var current_page: Page
 var current_tool: Tool:
 	set(value):
 		current_tool = value
+		canvas.set_tool_cursor(value)
 		tool_changed.emit(value)
 
 var _pointer_down: bool = false
